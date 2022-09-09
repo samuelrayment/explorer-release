@@ -29,6 +29,7 @@ async function run(): Promise<void> {
 	basehead: `${event.before}...${event.after}`
     });
     console.log(commits);
+    console.log(commits['data']['commits'].map((i) => i['commit']));
 }
 
 run()
