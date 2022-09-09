@@ -1,11 +1,10 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Explorer Integration Reporter'
+description: 'Reports integrations back into main for DORA metrics'
+author: 'Global'
 inputs:
-  milliseconds: # change this
+  github-token: # change this
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'A github token with repo access'
 runs:
   using: 'node16'
   main: 'dist/index.js'

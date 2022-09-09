@@ -1,19 +1,27 @@
 import * as core from '@actions/core'
+import * as github from '@actions/github'
 import {wait} from './wait'
 
+type ActionInput = {
+    token: string,
+}
+
+function getInputs(): ActionInput {
+    const token = core.getInput('github-token', {required: true})
+
+    return {
+	token
+    }
+}
+
 async function run(): Promise<void> {
-  try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+    const inputs = getInputs();
+    const octokit = github.getOctokit(inputs.token);
+    const event = github.event;
+    const context = github.context;
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    core.setOutput('time', new Date().toTimeString())
-  } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message)
-  }
+    console.log(event['before']);
+    console.log(event['after']);
 }
 
 run()
