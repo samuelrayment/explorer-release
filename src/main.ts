@@ -23,6 +23,12 @@ async function run(): Promise<void> {
 
     console.log(event.before);
     console.log(event.after);
+    const commits = await octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
+	owner: context.repo.owner,
+	repo: context.repo.repo,
+	basehead: `${event.before}...${event.after}`
+    });
+    console.log(commits);
 }
 
 run()
