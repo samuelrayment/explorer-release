@@ -49,6 +49,7 @@ function run() {
         const octokit = github.getOctokit(inputs.token);
         const context = github.context;
         const event = context.payload;
+        const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
         console.log(event.before);
         console.log(event.after);
         const commits = yield octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
@@ -57,7 +58,13 @@ function run() {
             basehead: `${event.before}...${event.after}`
         });
         console.log(commits);
-        console.log(commits['data']['commits'].map((i) => i['commit']));
+        console.log(commits['data']['commits'].map((i) => {
+            var _a;
+            return {
+                timestamp: (_a = i.commit.author) === null || _a === void 0 ? void 0 : _a.date,
+                sha: i['url'].replace(apiRoot, '')
+            };
+        }));
     });
 }
 run();

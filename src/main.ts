@@ -20,7 +20,8 @@ async function run(): Promise<void> {
     const octokit = github.getOctokit(inputs.token);
     const context = github.context;
     const event = context.payload as PushEvent;
-
+    const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
+    
     console.log(event.before);
     console.log(event.after);
     const commits = await octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
@@ -29,7 +30,12 @@ async function run(): Promise<void> {
 	basehead: `${event.before}...${event.after}`
     });
     console.log(commits);
-    console.log(commits['data']['commits'].map((i) => i['commit']));
+    console.log(commits['data']['commits'].map((i) => {
+	return {
+	    timestamp: i.commit.author?.date,
+	    sha: i['url'].replace(apiRoot, '')
+	};
+    }));
 }
 
 run()
