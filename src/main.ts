@@ -24,6 +24,7 @@ async function run(): Promise<void> {
     
     console.log(event.before);
     console.log(event.after);
+    console.log(event);
     const commits = await octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
 	owner: context.repo.owner,
 	repo: context.repo.repo,

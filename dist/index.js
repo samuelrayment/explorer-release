@@ -52,6 +52,7 @@ function run() {
         const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
         console.log(event.before);
         console.log(event.after);
+        console.log(event);
         const commits = yield octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
             owner: context.repo.owner,
             repo: context.repo.repo,
