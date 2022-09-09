@@ -66,7 +66,7 @@ function run() {
                 sha: i['url'].replace(apiRoot, '')
             };
         }));
-        console.log(event.repository.updated_at);
+        console.log(event.repository.pushed_at);
     });
 }
 run();
