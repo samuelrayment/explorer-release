@@ -37,6 +37,7 @@ async function run(): Promise<void> {
 	    sha: i['url'].replace(apiRoot, '')
 	};
     }));
+    console.log(event.repository.updated_at);
 }
 
 run()
