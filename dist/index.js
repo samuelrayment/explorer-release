@@ -51,6 +51,7 @@ function run() {
         const event = context.payload;
         console.log(event.before);
         console.log(event.after);
+        console.log(inputs.token);
         const commits = yield octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
             owner: context.repo.owner,
             repo: context.repo.repo,
