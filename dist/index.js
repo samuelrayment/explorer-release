@@ -43,6 +43,19 @@ function getInputs() {
         token
     };
 }
+function mapCommitToCommitTime(apiRoot, commit) {
+    var _a;
+    const author = commit.author || null;
+    let { date: parsedDate = 0 } = author !== null && author !== void 0 ? author : {};
+    if (typeof parsedDate === "string") {
+        parsedDate = (_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0;
+    }
+    const timestamp = (typeof parsedDate == "string" ? 0 : parsedDate) / 1000;
+    return {
+        timestamp,
+        sha: commit['url'].replace(apiRoot, '')
+    };
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const inputs = getInputs();
@@ -50,24 +63,14 @@ function run() {
         const context = github.context;
         const event = context.payload;
         const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
-        const commits = yield octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
+        const commitResponse = yield octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
             owner: context.repo.owner,
             repo: context.repo.repo,
             basehead: `${event.before}...${event.after}`
         });
-        console.log(commits);
-        const commitTimes = commits['data']['commits'].map((i) => {
-            var _a;
-            const author = i.commit.author || null;
-            let { date: parsedDate = 0 } = author !== null && author !== void 0 ? author : {};
-            if (typeof parsedDate === "string") {
-                parsedDate = (_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0;
-            }
-            const timestamp = typeof parsedDate == "string" ? 0 : parsedDate;
-            return {
-                timestamp,
-                sha: i['url'].replace(apiRoot, '')
-            };
+        console.log(commitResponse);
+        const commitTimes = commitResponse['data']['commits'].map((i) => {
+            return mapCommitToCommitTime(apiRoot, i);
         });
         const rawPushedAt = event.repository.pushed_at;
         let pushedAt = 0;
