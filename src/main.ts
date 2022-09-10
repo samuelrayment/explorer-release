@@ -7,6 +7,16 @@ type ActionInput = {
     token: string,
 }
 
+type CommitTime = {
+    timestamp: number,
+    sha: string,
+}
+
+type MessageBody = {
+    commits: CommitTime[],
+    pushedAt: number,
+}
+
 function getInputs(): ActionInput {
     const token = core.getInput('github-token', {required: true})
 
@@ -22,22 +32,35 @@ async function run(): Promise<void> {
     const event = context.payload as PushEvent;
     const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
     
-    console.log(event.before);
-    console.log(event.after);
-    console.log(event);
     const commits = await octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
 	owner: context.repo.owner,
 	repo: context.repo.repo,
 	basehead: `${event.before}...${event.after}`
     });
     console.log(commits);
-    console.log(commits['data']['commits'].map((i) => {
+    const commitTimes: CommitTime[] = commits['data']['commits'].map((i) => {
+	const author = i.commit.author || null;
+	let { date: parsedDate = 0 }: { date?: string | number } = author ?? {};
+	if (typeof parsedDate === "string") {
+	    parsedDate = Date.parse(parsedDate) ?? 0;
+	}	
+	const timestamp: number = typeof parsedDate == "string" ? 0 : parsedDate
 	return {
-	    timestamp: i.commit.author?.date,
+	    timestamp,
 	    sha: i['url'].replace(apiRoot, '')
 	};
-    }));
-    console.log(event.repository.pushed_at);
+    });
+    const rawPushedAt = event.repository.pushed_at;
+    let pushedAt = 0;
+    if (typeof rawPushedAt === 'number') {
+	pushedAt = rawPushedAt;
+    }
+    
+    const messageBody: MessageBody = {
+	commits: commitTimes,
+	pushedAt
+    };
+    console.log(messageBody);
 }
 
 run()

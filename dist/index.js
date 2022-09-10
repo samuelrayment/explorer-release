@@ -50,23 +50,35 @@ function run() {
         const context = github.context;
         const event = context.payload;
         const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
-        console.log(event.before);
-        console.log(event.after);
-        console.log(event);
         const commits = yield octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
             owner: context.repo.owner,
             repo: context.repo.repo,
             basehead: `${event.before}...${event.after}`
         });
         console.log(commits);
-        console.log(commits['data']['commits'].map((i) => {
+        const commitTimes = commits['data']['commits'].map((i) => {
             var _a;
+            const author = i.commit.author || null;
+            let { date: parsedDate = 0 } = author !== null && author !== void 0 ? author : {};
+            if (typeof parsedDate === "string") {
+                parsedDate = (_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0;
+            }
+            const timestamp = typeof parsedDate == "string" ? 0 : parsedDate;
             return {
-                timestamp: (_a = i.commit.author) === null || _a === void 0 ? void 0 : _a.date,
+                timestamp,
                 sha: i['url'].replace(apiRoot, '')
             };
-        }));
-        console.log(event.repository.pushed_at);
+        });
+        const rawPushedAt = event.repository.pushed_at;
+        let pushedAt = 0;
+        if (typeof rawPushedAt === 'number') {
+            pushedAt = rawPushedAt;
+        }
+        const messageBody = {
+            commits: commitTimes,
+            pushedAt
+        };
+        console.log(messageBody);
     });
 }
 run();
