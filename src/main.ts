@@ -1,6 +1,5 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-//import { getOctokit } from '@actions/github'
 import {wait} from './wait'
 import {PushEvent} from '@octokit/webhooks-types'
 import { Endpoints } from "@octokit/types";
@@ -40,6 +39,8 @@ type CommitAuthor = {
     date: string
 }
 
+type Octokit = ReturnType<typeof github.getOctokit>
+
 const context = github.context;
 
 function getInputs(): ActionInput {
@@ -59,7 +60,7 @@ function mapCommitToCommitTime(apiRoot: string, commit: CommitResponse): CommitT
     };
 }
 
-function fetchCommits(octokit: ReturnType<typeof github.getOctokit>, before: string, after: string): AsyncIterable<CompareResponse> {
+function fetchCommits(octokit: Octokit, before: string, after: string): AsyncIterable<CompareResponse> {
     return octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
     	owner: context.repo.owner,
     	repo: context.repo.repo,
