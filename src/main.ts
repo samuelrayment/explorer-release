@@ -60,6 +60,7 @@ async function run(): Promise<void> {
     });
     let commitTimes = [];
     for await (const { data: commits } of iterator) {
+	console.log(commits);
     	for (const commit of commits) {
     	    commitTimes.push(mapCommitToCommitTime(apiRoot, commit));
     	}
