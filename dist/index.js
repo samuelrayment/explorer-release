@@ -34,6 +34,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
@@ -57,21 +64,44 @@ function mapCommitToCommitTime(apiRoot, commit) {
     };
 }
 function run() {
+    var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
         const inputs = getInputs();
         const octokit = github.getOctokit(inputs.token);
         const context = github.context;
         const event = context.payload;
         const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
-        const commitResponse = yield octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
+        //const commitResponse: Endpoints['GET /repos/{owner}/{repo}/compare/{basehead}']['response'] = await octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
+        //	owner: context.repo.owner,
+        //	repo: context.repo.repo,
+        //	basehead: `${event.before}...${event.after}`
+        //});
+        const iterator = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
             owner: context.repo.owner,
             repo: context.repo.repo,
-            basehead: `${event.before}...${event.after}`
+            basehead: `${event.before}...${event.after}`,
+            per_page: 100
         });
-        console.log(commitResponse);
-        const commitTimes = commitResponse['data']['commits'].map((i) => {
-            return mapCommitToCommitTime(apiRoot, i);
-        });
+        let commitTimes = [];
+        try {
+            for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {
+                const { data: commits } = iterator_1_1.value;
+                for (const commit of commits) {
+                    commitTimes.push(mapCommitToCommitTime(apiRoot, commit));
+                }
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (iterator_1_1 && !iterator_1_1.done && (_a = iterator_1.return)) yield _a.call(iterator_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        //console.log(commitResponse);
+        //const commitTimes: CommitTime[] = commitResponse['data']['commits'].map((i) => {
+        //	return mapCommitToCommitTime(apiRoot, i);
+        //});
         const rawPushedAt = event.repository.pushed_at;
         let pushedAt = 0;
         if (typeof rawPushedAt === 'number') {
