@@ -52,12 +52,12 @@ function getInputs() {
 }
 function mapCommitToCommitTime(apiRoot, commit) {
     var _a;
-    const author = commit.author || null;
-    let { date: parsedDate = 0 } = author !== null && author !== void 0 ? author : {};
-    if (typeof parsedDate === "string") {
-        parsedDate = (_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0;
-    }
-    const timestamp = (typeof parsedDate == "string" ? 0 : parsedDate) / 1000;
+    const author = commit.author;
+    let { date: parsedDate = "" } = author;
+    //if (typeof parsedDate === "string") {
+    const timestamp = (_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0;
+    //}	
+    //const timestamp: number = (typeof parsedDate == "string" ? 0 : parsedDate) / 1000;
     return {
         timestamp,
         sha: commit.url.replace(apiRoot, '')
