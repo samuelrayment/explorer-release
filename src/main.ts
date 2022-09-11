@@ -58,10 +58,10 @@ async function run(): Promise<void> {
     	basehead: `${event.before}...${event.after}`,
 	per_page: 100
     });
+    console.log(iterator)
     let commitTimes = [];
-    for await (const { data: commits } of iterator) {
-	console.log(commits);
-    	for (const commit of commits) {
+    for await (const { data } of iterator) {
+    	for (const commit of data) {
     	    commitTimes.push(mapCommitToCommitTime(apiRoot, commit));
     	}
     }
