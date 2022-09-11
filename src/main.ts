@@ -52,7 +52,7 @@ async function run(): Promise<void> {
     //	repo: context.repo.repo,
     //	basehead: `${event.before}...${event.after}`
     //});
-    const iterator = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
+    const iterator: AsyncIterable<any> = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
     	owner: context.repo.owner,
     	repo: context.repo.repo,
     	basehead: `${event.before}...${event.after}`,
