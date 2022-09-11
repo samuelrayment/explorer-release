@@ -70,7 +70,7 @@ function run() {
         const octokit = github.getOctokit(inputs.token);
         const context = github.context;
         const event = context.payload;
-        const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
+        const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
         const iterator = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
             owner: context.repo.owner,
             repo: context.repo.repo,

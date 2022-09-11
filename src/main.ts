@@ -44,7 +44,7 @@ async function run(): Promise<void> {
     const octokit = github.getOctokit(inputs.token);
     const context = github.context;
     const event = context.payload as PushEvent;
-    const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
+    const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
 
     
     const iterator: AsyncIterable<any> = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
