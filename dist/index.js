@@ -44,6 +44,7 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const context = github.context;
 function getInputs() {
     const token = core.getInput('github-token', { required: true });
     return {
@@ -59,20 +60,22 @@ function mapCommitToCommitTime(apiRoot, commit) {
         sha: commit.url.replace(apiRoot, '')
     };
 }
+function fetchCommits(octokit, before, after) {
+    return octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        basehead: `${before}...${after}`,
+        per_page: 100
+    });
+}
 function run() {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
         const inputs = getInputs();
         const octokit = github.getOctokit(inputs.token);
-        const context = github.context;
         const event = context.payload;
         const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
-        const iterator = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            basehead: `${event.before}...${event.after}`,
-            per_page: 100
-        });
+        const iterator = fetchCommits(octokit, event.before, event.after);
         let commitTimes = [];
         try {
             for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {

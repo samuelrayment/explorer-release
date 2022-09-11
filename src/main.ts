@@ -1,5 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import { getOctokit } from '@actions/github'
 import {wait} from './wait'
 import {PushEvent} from '@octokit/webhooks-types'
 import { Endpoints } from "@octokit/types";
@@ -39,6 +40,8 @@ type CommitAuthor = {
     date: string
 }
 
+const context = github.context;
+
 function getInputs(): ActionInput {
     const token = core.getInput('github-token', {required: true})
 
@@ -56,20 +59,23 @@ function mapCommitToCommitTime(apiRoot: string, commit: CommitResponse): CommitT
     };
 }
 
+function fetchCommits(octokit: ReturnType<typeof getOctokit>, before: string, after: string): AsyncIterable<CompareResponse> {
+    return octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
+    	owner: context.repo.owner,
+    	repo: context.repo.repo,
+    	basehead: `${before}...${after}`,
+	per_page: 100
+    }) as AsyncIterable<CompareResponse>;
+}
+
 async function run(): Promise<void> {
     const inputs = getInputs();
     const octokit = github.getOctokit(inputs.token);
-    const context = github.context;
     const event = context.payload as PushEvent;
     const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
 
     
-    const iterator = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
-    	owner: context.repo.owner,
-    	repo: context.repo.repo,
-    	basehead: `${event.before}...${event.after}`,
-	per_page: 100
-    }) as AsyncIterable<CompareResponse>;
+    const iterator = fetchCommits(octokit, event.before, event.after);
     let commitTimes: CommitTime[] = [];
     for await (const { data: { commits } } of iterator) {
     	for (const commitWrapper of commits) {
