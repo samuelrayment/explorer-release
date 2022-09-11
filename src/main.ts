@@ -18,6 +18,27 @@ type MessageBody = {
     pushedAt: number,
 }
 
+type CompareResponse = {
+    data: CommitsResponseData
+}
+
+type CommitsResponseData = {
+    commits: CommitWrapperResponse[]
+}
+
+type CommitWrapperResponse = {
+    commit: CommitResponse
+}
+
+type CommitResponse = {
+    author: CommitAuthor,
+    url: string
+}
+
+type CommitAuthor = {
+    date: string
+}
+
 function getInputs(): ActionInput {
     const token = core.getInput('github-token', {required: true})
 
@@ -26,7 +47,7 @@ function getInputs(): ActionInput {
     }
 }
 
-function mapCommitToCommitTime(apiRoot: string, commit: any): CommitTime {
+function mapCommitToCommitTime(apiRoot: string, commit: CommitResponse): CommitTime {
     const author = commit.author || null;
     let { date: parsedDate = 0 }: { date?: string | number } = author ?? {};
     if (typeof parsedDate === "string") {
@@ -35,7 +56,7 @@ function mapCommitToCommitTime(apiRoot: string, commit: any): CommitTime {
     const timestamp: number = (typeof parsedDate == "string" ? 0 : parsedDate) / 1000;
     return {
 	timestamp,
-	sha: commit['url'].replace(apiRoot, '')
+	sha: commit.url.replace(apiRoot, '')
     };
 }
 
@@ -47,17 +68,16 @@ async function run(): Promise<void> {
     const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
 
     
-    const iterator: AsyncIterable<any> = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
+    const iterator = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
     	owner: context.repo.owner,
     	repo: context.repo.repo,
     	basehead: `${event.before}...${event.after}`,
 	per_page: 100
-    });
+    }) as AsyncIterable<CompareResponse>;
     let commitTimes: CommitTime[] = [];
     for await (const { data: { commits } } of iterator) {
-    	for (const commit of commits) {
-	    console.log(commit);
-    	    commitTimes.push(mapCommitToCommitTime(apiRoot, commit.commit));
+    	for (const commitWrapper of commits) {
+    	    commitTimes.push(mapCommitToCommitTime(apiRoot, commitWrapper.commit));
     	}
     }
     const rawPushedAt = event.repository.pushed_at;

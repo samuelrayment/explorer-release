@@ -60,7 +60,7 @@ function mapCommitToCommitTime(apiRoot, commit) {
     const timestamp = (typeof parsedDate == "string" ? 0 : parsedDate) / 1000;
     return {
         timestamp,
-        sha: commit['url'].replace(apiRoot, '')
+        sha: commit.url.replace(apiRoot, '')
     };
 }
 function run() {
@@ -81,9 +81,8 @@ function run() {
         try {
             for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {
                 const { data: { commits } } = iterator_1_1.value;
-                for (const commit of commits) {
-                    console.log(commit);
-                    commitTimes.push(mapCommitToCommitTime(apiRoot, commit.commit));
+                for (const commitWrapper of commits) {
+                    commitTimes.push(mapCommitToCommitTime(apiRoot, commitWrapper.commit));
                 }
             }
         }
