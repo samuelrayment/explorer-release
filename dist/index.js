@@ -71,23 +71,18 @@ function run() {
         const context = github.context;
         const event = context.payload;
         const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/commits/`;
-        //const commitResponse: Endpoints['GET /repos/{owner}/{repo}/compare/{basehead}']['response'] = await octokit.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
-        //	owner: context.repo.owner,
-        //	repo: context.repo.repo,
-        //	basehead: `${event.before}...${event.after}`
-        //});
         const iterator = octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
             owner: context.repo.owner,
             repo: context.repo.repo,
             basehead: `${event.before}...${event.after}`,
             per_page: 100
         });
-        console.log(iterator);
         let commitTimes = [];
         try {
             for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {
                 const { data: { commits } } = iterator_1_1.value;
                 for (const commit of commits) {
+                    console.log(commit);
                     commitTimes.push(mapCommitToCommitTime(apiRoot, commit));
                 }
             }
@@ -99,10 +94,6 @@ function run() {
             }
             finally { if (e_1) throw e_1.error; }
         }
-        //console.log(commitResponse);
-        //const commitTimes: CommitTime[] = commitResponse['data']['commits'].map((i) => {
-        //	return mapCommitToCommitTime(apiRoot, i);
-        //});
         const rawPushedAt = event.repository.pushed_at;
         let pushedAt = 0;
         if (typeof rawPushedAt === 'number') {
