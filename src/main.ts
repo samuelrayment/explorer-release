@@ -55,12 +55,10 @@ async function run(): Promise<void> {
     });
     let commitTimes: CommitTime[] = [];
     for await (const { data: { commits } } of iterator) {
-    //for await (const { data } of iterator) {
-	console.log(commits);
-    	//for (const commit of commits) {
-	//    console.log(commit);
-    	//    commitTimes.push(mapCommitToCommitTime(apiRoot, commit));
-    	//}
+    	for (const commit of commits) {
+	    console.log(commit);
+    	    commitTimes.push(mapCommitToCommitTime(apiRoot, commit.commit));
+    	}
     }
     const rawPushedAt = event.repository.pushed_at;
     let pushedAt = 0;

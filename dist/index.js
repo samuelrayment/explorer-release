@@ -81,8 +81,10 @@ function run() {
         try {
             for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {
                 const { data: { commits } } = iterator_1_1.value;
-                //for await (const { data } of iterator) {
-                console.log(commits);
+                for (const commit of commits) {
+                    console.log(commit);
+                    commitTimes.push(mapCommitToCommitTime(apiRoot, commit.commit));
+                }
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
