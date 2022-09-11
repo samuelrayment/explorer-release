@@ -79,10 +79,10 @@ function run() {
         });
         let commitTimes = [];
         try {
-            //for await (const { data: { commits } } of iterator) {
             for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {
-                const { data } = iterator_1_1.value;
-                console.log(data);
+                const { data: { commits } } = iterator_1_1.value;
+                //for await (const { data } of iterator) {
+                console.log(commits);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
