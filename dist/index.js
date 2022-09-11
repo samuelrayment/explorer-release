@@ -52,12 +52,8 @@ function getInputs() {
 }
 function mapCommitToCommitTime(apiRoot, commit) {
     var _a;
-    const author = commit.author;
-    let { date: parsedDate = "" } = author;
-    //if (typeof parsedDate === "string") {
+    let { date: parsedDate = "" } = commit.author;
     const timestamp = (_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0;
-    //}	
-    //const timestamp: number = (typeof parsedDate == "string" ? 0 : parsedDate) / 1000;
     return {
         timestamp,
         sha: commit.url.replace(apiRoot, '')
