@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {wait} from './wait'
 import {PushEvent} from '@octokit/webhooks-types'
 import { Endpoints } from "@octokit/types";
+import * as http from '@actions/http-client';
 
-type ActionInput = {
+export type ActionInput = {
     token: string,
 }
 
@@ -39,9 +39,19 @@ type CommitAuthor = {
     date: string
 }
 
-type Octokit = ReturnType<typeof github.getOctokit>
+export type MinimalPushEvent = {
+    pushed_at: number | string | null,
+    before: string,
+    after: string
+}
 
-const context = github.context;
+type ActionContext = {
+    repoOwner: string,
+    repoName: string,
+    apiRoot: string
+}
+
+type Octokit = ReturnType<typeof github.getOctokit>
 
 function getInputs(): ActionInput {
     const token = core.getInput('github-token', {required: true})
@@ -51,49 +61,88 @@ function getInputs(): ActionInput {
     }
 }
 
-function mapCommitToCommitTime(apiRoot: string, commit: CommitResponse): CommitTime {
+function mapCommitToCommitTime(actionContext: ActionContext,
+			       commit: CommitResponse): CommitTime {
     let { date: parsedDate = "" } = commit.author;
     const timestamp: number = (Date.parse(parsedDate) ?? 0) / 1000;
     return {
 	timestamp,
-	sha: commit.url.replace(apiRoot, '')
+	sha: commit.url.replace(actionContext.apiRoot, '')
     };
 }
 
-function fetchCommits(octokit: Octokit, before: string, after: string): AsyncIterable<CompareResponse> {
+function fetchCommits(octokit: Octokit, actionContext: ActionContext,
+		      before: string, after: string): AsyncIterable<CompareResponse> {
     return octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
-    	owner: context.repo.owner,
-    	repo: context.repo.repo,
+    	owner: actionContext.repoOwner,
+    	repo: actionContext.repoName,
     	basehead: `${before}...${after}`,
 	per_page: 100
     }) as AsyncIterable<CompareResponse>;
 }
 
-async function run(): Promise<void> {
-    const inputs = getInputs();
-    const octokit = github.getOctokit(inputs.token);
-    const event = context.payload as PushEvent;
-    const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
-
-    
-    const iterator = fetchCommits(octokit, event.before, event.after);
+async function fetchCommitTimes(octokit: Octokit, actionContext: ActionContext,
+				before: string, after: string): Promise<CommitTime[]> {
+    const iterator = fetchCommits(octokit, actionContext, before, after);
     let commitTimes: CommitTime[] = [];
     for await (const { data: { commits } } of iterator) {
     	for (const commitWrapper of commits) {
-    	    commitTimes.push(mapCommitToCommitTime(apiRoot, commitWrapper.commit));
+    	    commitTimes.push(mapCommitToCommitTime(actionContext,
+						   commitWrapper.commit));
     	}
     }
-    const rawPushedAt = event.repository.pushed_at;
+    return commitTimes;
+}
+
+function getPushedAt(event: MinimalPushEvent): number {
+    const rawPushedAt = event.pushed_at;
     let pushedAt = 0;
     if (typeof rawPushedAt === 'number') {
 	pushedAt = rawPushedAt;
     }
+    return pushedAt;
+}
+
+async function publishPushEventToExplorer(messageBody: MessageBody) {
     
-    const messageBody: MessageBody = {
+}
+
+export async function processPushEvent(event: MinimalPushEvent) {
+    const context = github.context;
+    const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
+    const actionContext = {
+	apiRoot,
+	repoOwner: context.repo.owner,
+	repoName: context.repo.repo
+    };
+    
+    const inputs = getInputs();
+    const octokit = github.getOctokit(inputs.token);
+
+    const commitTimes = await fetchCommitTimes(octokit, actionContext,
+					       event.before, event.after);
+    const pushedAt = getPushedAt(event);
+    
+    const messageBody = {
 	commits: commitTimes,
 	pushedAt
     };
     console.log(messageBody);
+    await publishPushEventToExplorer(messageBody);    
+}
+
+async function run(): Promise<void> {
+    try {
+	const event = github.context.payload as PushEvent;
+	const minimalEvent = {
+	    before: event.before,
+	    after: event.after,
+	    pushed_at: event.repository.pushed_at
+	};
+	await processPushEvent(minimalEvent);
+    } catch (error: unknown) {
+        core.info((error as Error).message);
+    }
 }
 
 run()

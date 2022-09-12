@@ -45,13 +45,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const context = github.context;
+const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
 function getInputs() {
     const token = core.getInput('github-token', { required: true });
     return {
         token
     };
 }
-function mapCommitToCommitTime(apiRoot, commit) {
+function mapCommitToCommitTime(commit) {
     var _a;
     let { date: parsedDate = "" } = commit.author;
     const timestamp = ((_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0) / 1000;
@@ -68,20 +69,16 @@ function fetchCommits(octokit, before, after) {
         per_page: 100
     });
 }
-function run() {
+function fetchCommitTimes(octokit, before, after) {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const inputs = getInputs();
-        const octokit = github.getOctokit(inputs.token);
-        const event = context.payload;
-        const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
-        const iterator = fetchCommits(octokit, event.before, event.after);
+        const iterator = fetchCommits(octokit, before, after);
         let commitTimes = [];
         try {
             for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {
                 const { data: { commits } } = iterator_1_1.value;
                 for (const commitWrapper of commits) {
-                    commitTimes.push(mapCommitToCommitTime(apiRoot, commitWrapper.commit));
+                    commitTimes.push(mapCommitToCommitTime(commitWrapper.commit));
                 }
             }
         }
@@ -92,16 +89,34 @@ function run() {
             }
             finally { if (e_1) throw e_1.error; }
         }
-        const rawPushedAt = event.repository.pushed_at;
-        let pushedAt = 0;
-        if (typeof rawPushedAt === 'number') {
-            pushedAt = rawPushedAt;
-        }
+        return commitTimes;
+    });
+}
+function getPushedAt(event) {
+    const rawPushedAt = event.repository.pushed_at;
+    let pushedAt = 0;
+    if (typeof rawPushedAt === 'number') {
+        pushedAt = rawPushedAt;
+    }
+    return pushedAt;
+}
+function publishPushEventToExplorer(messageBody) {
+    return __awaiter(this, void 0, void 0, function* () {
+    });
+}
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const inputs = getInputs();
+        const octokit = github.getOctokit(inputs.token);
+        const event = context.payload;
+        const commitTimes = yield fetchCommitTimes(octokit, event.before, event.after);
+        const pushedAt = getPushedAt(event);
         const messageBody = {
             commits: commitTimes,
             pushedAt
         };
         console.log(messageBody);
+        yield publishPushEventToExplorer(messageBody);
     });
 }
 run();
