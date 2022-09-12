@@ -18,7 +18,7 @@ type MessageBody = {
     pushedAt: number,
 }
 
-type CompareResponse = {
+export type CompareResponse = {
     data: CommitsResponseData
 }
 
