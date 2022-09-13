@@ -42,43 +42,47 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.processPushEvent = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-const context = github.context;
-const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
+const http = __importStar(__nccwpck_require__(9925));
 function getInputs() {
     const token = core.getInput('github-token', { required: true });
+    const endpoint = core.getInput('explorer-endpoint', { required: true });
+    const secretKey = core.getInput('secret-key', { required: true });
     return {
-        token
+        token,
+        endpoint,
+        secretKey
     };
 }
-function mapCommitToCommitTime(commit) {
+function mapCommitToCommitTime(actionContext, commit) {
     var _a;
     let { date: parsedDate = "" } = commit.author;
     const timestamp = ((_a = Date.parse(parsedDate)) !== null && _a !== void 0 ? _a : 0) / 1000;
     return {
         timestamp,
-        sha: commit.url.replace(apiRoot, '')
+        sha: commit.url.replace(actionContext.apiRoot, '')
     };
 }
-function fetchCommits(octokit, before, after) {
+function fetchCommits(octokit, actionContext, before, after) {
     return octokit.paginate.iterator('GET /repos/{owner}/{repo}/compare/{basehead}', {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
+        owner: actionContext.repoOwner,
+        repo: actionContext.repoName,
         basehead: `${before}...${after}`,
         per_page: 100
     });
 }
-function fetchCommitTimes(octokit, before, after) {
+function fetchCommitTimes(octokit, actionContext, before, after) {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const iterator = fetchCommits(octokit, before, after);
+        const iterator = fetchCommits(octokit, actionContext, before, after);
         let commitTimes = [];
         try {
             for (var iterator_1 = __asyncValues(iterator), iterator_1_1; iterator_1_1 = yield iterator_1.next(), !iterator_1_1.done;) {
                 const { data: { commits } } = iterator_1_1.value;
                 for (const commitWrapper of commits) {
-                    commitTimes.push(mapCommitToCommitTime(commitWrapper.commit));
+                    commitTimes.push(mapCommitToCommitTime(actionContext, commitWrapper.commit));
                 }
             }
         }
@@ -93,30 +97,55 @@ function fetchCommitTimes(octokit, before, after) {
     });
 }
 function getPushedAt(event) {
-    const rawPushedAt = event.repository.pushed_at;
+    const rawPushedAt = event.pushed_at;
     let pushedAt = 0;
     if (typeof rawPushedAt === 'number') {
         pushedAt = rawPushedAt;
     }
     return pushedAt;
 }
-function publishPushEventToExplorer(messageBody) {
+function publishPushEventToExplorer(client, inputs, messageBody) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log(messageBody);
+        client.post(inputs.endpoint, JSON.stringify(messageBody));
     });
 }
-function run() {
+function processPushEvent(event, client) {
     return __awaiter(this, void 0, void 0, function* () {
+        const context = github.context;
+        const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
+        const actionContext = {
+            apiRoot,
+            repoOwner: context.repo.owner,
+            repoName: context.repo.repo
+        };
         const inputs = getInputs();
         const octokit = github.getOctokit(inputs.token);
-        const event = context.payload;
-        const commitTimes = yield fetchCommitTimes(octokit, event.before, event.after);
+        const commitTimes = yield fetchCommitTimes(octokit, actionContext, event.before, event.after);
         const pushedAt = getPushedAt(event);
         const messageBody = {
             commits: commitTimes,
             pushedAt
         };
-        console.log(messageBody);
-        yield publishPushEventToExplorer(messageBody);
+        yield publishPushEventToExplorer(client, inputs, messageBody);
+    });
+}
+exports.processPushEvent = processPushEvent;
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const event = github.context.payload;
+            const minimalEvent = {
+                before: event.before,
+                after: event.after,
+                pushed_at: event.repository.pushed_at
+            };
+            const client = new http.HttpClient();
+            yield processPushEvent(minimalEvent, client);
+        }
+        catch (error) {
+            core.info(error.message);
+        }
     });
 }
 run();

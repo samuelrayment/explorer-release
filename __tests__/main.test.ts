@@ -1,13 +1,22 @@
-import {expect, test} from '@jest/globals'
-import { processPushEvent, ActionInput, MinimalPushEvent, CompareResponse } from '../src/main'
-import { setInput } from '../src/utils/testUtils'
-import * as core from "@actions/core";
-import * as github from '@actions/github'
-
 let commitResponses: CompareResponse[] = [];
 
+var mockIterator = jest.fn().mockReturnValue({
+    async *[Symbol.asyncIterator]() {
+        let response = commitResponses.shift()
+        while (response !== undefined) {
+            yield response
+            response = commitResponses.shift()
+        }
+    }
+}); 
 
-let wtf = jest.mock('@actions/github', () => {
+var mockGetOctokit = jest.fn().mockReturnValue({
+    paginate: {
+        iterator: mockIterator
+    }
+});
+    
+jest.mock('@actions/github', () => {
   return {
     context: {
       repo: {
@@ -15,21 +24,16 @@ let wtf = jest.mock('@actions/github', () => {
         repo: 'repo'
       }
     },
-    getOctokit: jest.fn().mockReturnValue({
-      paginate: {
-        iterator: jest.fn().mockReturnValue({
-          async *[Symbol.asyncIterator]() {
-            let response = commitResponses.shift()
-            while (response !== undefined) {
-              yield response
-              response = commitResponses.shift()
-            }
-          }
-        })
-      }
-    })
+    getOctokit: mockGetOctokit
   }
 });
+jest.mock("@actions/http-client");
+
+import {expect, test} from '@jest/globals'
+import { processPushEvent, ActionInput, MinimalPushEvent, CompareResponse } from '../src/main'
+import { setInput } from '../src/utils/testUtils'
+import * as core from "@actions/core";
+import * as http from "@actions/http-client";
 
 afterEach(() => {
     commitResponses = [];
@@ -52,27 +56,40 @@ function addCommitToResponse(sha: string, date: string) {
 }
 
 test('should post commits when action fires on push', async() => {
+    const client = new http.HttpClient();
     const event: MinimalPushEvent = {
 	before: "before-ref",
 	after: "after-ref",
 	pushed_at: 12102323
     };
+    const endpoint = 'http://endpoint.com/web-hook'
     setInput('github-token', 'fake-token');
+    setInput('explorer-endpoint', endpoint);
+    setInput('secret-key', 'secret-key');    
     addCommitToResponse("first-sha", "2022-09-12T09:00:00");
     addCommitToResponse("second-sha", "2022-09-12T09:10:00");
     
-    await processPushEvent(event);
+    await processPushEvent(event, client);
 
-    //expect(github.getOctokit).toHaveBeenCalledWith('fake-token');
-    //console.log(githubMock);
-    //expect(mockGetOctokit).toHaveBeenCalledWith('fake-token');
-    //expect(mockOctokit.paginate.iterator).toHaveBeenCalledWith(
-    //	'GET /repos/{owner}/{repo}/compare/{basehead}',
-    //	{
-    //	    owner: 'owner',
-    //	    repo: 'repo',
-    //	    basehead: 'base-ref...after-ref',
-    //	    per_page: 100
-    //	}
-    //);
+    expect(mockGetOctokit).toHaveBeenCalledWith('fake-token');
+    expect(mockIterator).toHaveBeenCalledWith(
+    	'GET /repos/{owner}/{repo}/compare/{basehead}',
+    	{
+    	    owner: 'owner',
+    	    repo: 'repo',
+    	    basehead: 'before-ref...after-ref',
+    	    per_page: 100
+    	}
+    );
+    let expectedBody = {
+      commits: [
+        { timestamp: 1662969600, sha: 'first-sha' },
+        { timestamp: 1662970200, sha: 'second-sha' }
+      ],
+      pushedAt: 12102323
+    };
+    expect(client.post).toHaveBeenCalledWith(
+	endpoint,
+	JSON.stringify(expectedBody)
+    );
 })

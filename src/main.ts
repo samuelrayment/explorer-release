@@ -6,6 +6,8 @@ import * as http from '@actions/http-client';
 
 export type ActionInput = {
     token: string,
+    endpoint: string,
+    secretKey: string
 }
 
 type CommitTime = {
@@ -54,10 +56,14 @@ type ActionContext = {
 type Octokit = ReturnType<typeof github.getOctokit>
 
 function getInputs(): ActionInput {
-    const token = core.getInput('github-token', {required: true})
+    const token = core.getInput('github-token', {required: true});
+    const endpoint = core.getInput('explorer-endpoint', {required: true});
+    const secretKey = core.getInput('secret-key', {required: true});
 
     return {
-	token
+	token,
+	endpoint,
+	secretKey
     }
 }
 
@@ -103,11 +109,18 @@ function getPushedAt(event: MinimalPushEvent): number {
     return pushedAt;
 }
 
-async function publishPushEventToExplorer(messageBody: MessageBody) {
-    
+async function publishPushEventToExplorer(client: http.HttpClient,
+					  inputs: ActionInput,
+					  messageBody: MessageBody) {
+    console.log(messageBody);
+    client.post(
+	inputs.endpoint,
+	JSON.stringify(messageBody)
+    )
 }
 
-export async function processPushEvent(event: MinimalPushEvent) {
+export async function processPushEvent(event: MinimalPushEvent,
+				       client: http.HttpClient) {
     const context = github.context;
     const apiRoot = `https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/git/commits/`;
     const actionContext = {
@@ -127,8 +140,7 @@ export async function processPushEvent(event: MinimalPushEvent) {
 	commits: commitTimes,
 	pushedAt
     };
-    console.log(messageBody);
-    await publishPushEventToExplorer(messageBody);    
+    await publishPushEventToExplorer(client, inputs, messageBody);    
 }
 
 async function run(): Promise<void> {
@@ -139,7 +151,8 @@ async function run(): Promise<void> {
 	    after: event.after,
 	    pushed_at: event.repository.pushed_at
 	};
-	await processPushEvent(minimalEvent);
+	const client = new http.HttpClient();
+	await processPushEvent(minimalEvent, client);
     } catch (error: unknown) {
         core.info((error as Error).message);
     }

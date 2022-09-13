@@ -2,9 +2,15 @@ name: 'Explorer Integration Reporter'
 description: 'Reports integrations back into main for DORA metrics'
 author: 'Global'
 inputs:
-  github-token: # change this
+  github-token: 
     required: true
     description: 'A github token with repo access'
+  explorer-endpoint: 
+    required: true
+    description: 'Endpoint for sending push events to explorer'
+  secret-key: 
+    required: true
+    description: 'Secret key to authenticate with explorer'
 runs:
   using: 'node16'
   main: 'dist/index.js'
