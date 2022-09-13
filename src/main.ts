@@ -117,7 +117,7 @@ async function publishPushEventToExplorer(client: http.HttpClient,
 	inputs.endpoint,
 	JSON.stringify(messageBody),
 	{
-	    'Content-Type': 'applicaiton/json'
+	    'Content-Type': 'application/json'
 	}
     )
     console.log(response);

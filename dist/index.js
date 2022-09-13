@@ -108,7 +108,7 @@ function publishPushEventToExplorer(client, inputs, messageBody) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(messageBody);
         let response = yield client.post(inputs.endpoint, JSON.stringify(messageBody), {
-            'Content-Type': 'applicaiton/json'
+            'Content-Type': 'application/json'
         });
         console.log(response);
     });
