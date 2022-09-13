@@ -107,7 +107,7 @@ function getPushedAt(event) {
 function publishPushEventToExplorer(client, inputs, messageBody) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(messageBody);
-        let response = client.post(inputs.endpoint, JSON.stringify(messageBody));
+        let response = yield client.post(inputs.endpoint, JSON.stringify(messageBody));
         console.log(response);
     });
 }
