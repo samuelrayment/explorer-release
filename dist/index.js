@@ -110,7 +110,6 @@ function publishPushEventToExplorer(client, inputs, messageBody) {
         let response = yield client.post(inputs.endpoint, JSON.stringify(messageBody), {
             'Content-Type': 'application/json'
         });
-        console.log(response);
     });
 }
 function processPushEvent(event, client) {
@@ -128,7 +127,8 @@ function processPushEvent(event, client) {
         const pushedAt = getPushedAt(event);
         const messageBody = {
             commits: commitTimes,
-            pushedAt
+            pushedAt,
+            sha: event.after
         };
         yield publishPushEventToExplorer(client, inputs, messageBody);
     });

@@ -59,7 +59,7 @@ test('should post commits when action fires on push', async() => {
     const client = new http.HttpClient();
     const event: MinimalPushEvent = {
 	before: "before-ref",
-	after: "after-ref",
+	after: "head-ref",
 	pushed_at: 12102323
     };
     const endpoint = 'http://endpoint.com/web-hook'
@@ -77,19 +77,23 @@ test('should post commits when action fires on push', async() => {
     	{
     	    owner: 'owner',
     	    repo: 'repo',
-    	    basehead: 'before-ref...after-ref',
+    	    basehead: 'before-ref...head-ref',
     	    per_page: 100
     	}
     );
-    let expectedBody = {
-      commits: [
-        { timestamp: 1662969600, sha: 'first-sha' },
-        { timestamp: 1662970200, sha: 'second-sha' }
-      ],
-      pushedAt: 12102323
+    let expectedBody = {			
+	commits: [
+          { timestamp: 1662969600, sha: 'first-sha' },
+          { timestamp: 1662970200, sha: 'second-sha' }
+	],
+	pushedAt: 12102323,
+	sha: 'head-ref'
     };
     expect(client.post).toHaveBeenCalledWith(
 	endpoint,
-	JSON.stringify(expectedBody)
+	JSON.stringify(expectedBody),
+	{
+	    'Content-Type': 'application/json'
+	}
     );
 })

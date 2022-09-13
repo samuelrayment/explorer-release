@@ -18,6 +18,7 @@ type CommitTime = {
 type MessageBody = {
     commits: CommitTime[],
     pushedAt: number,
+    sha: string
 }
 
 export type CompareResponse = {
@@ -120,7 +121,6 @@ async function publishPushEventToExplorer(client: http.HttpClient,
 	    'Content-Type': 'application/json'
 	}
     )
-    console.log(response);
 }
 
 export async function processPushEvent(event: MinimalPushEvent,
@@ -142,7 +142,8 @@ export async function processPushEvent(event: MinimalPushEvent,
     
     const messageBody = {
 	commits: commitTimes,
-	pushedAt
+	pushedAt,
+	sha: event.after
     };
     await publishPushEventToExplorer(client, inputs, messageBody);    
 }
