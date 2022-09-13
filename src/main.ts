@@ -113,10 +113,11 @@ async function publishPushEventToExplorer(client: http.HttpClient,
 					  inputs: ActionInput,
 					  messageBody: MessageBody) {
     console.log(messageBody);
-    client.post(
+    let response = client.post(
 	inputs.endpoint,
 	JSON.stringify(messageBody)
     )
+    console.log(response);
 }
 
 export async function processPushEvent(event: MinimalPushEvent,
