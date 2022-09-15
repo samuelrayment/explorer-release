@@ -83,8 +83,8 @@ test('should post commits when action fires on push', async() => {
     );
     let expectedBody = {			
 	commits: [
-          { timestamp: "2022-09-12T09:00:00+01:00", sha: 'first-sha' },
-          { timestamp: "2022-09-12T09:10:00+01:00", sha: 'second-sha' }
+          { committedAt: "2022-09-12T09:00:00+01:00", sha: 'first-sha' },
+          { committedAt: "2022-09-12T09:10:00+01:00", sha: 'second-sha' }
 	],
 	pushedAt: "2022-09-13T09:19:57+01:00",
 	sha: 'head-ref'

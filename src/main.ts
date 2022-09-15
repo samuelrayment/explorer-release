@@ -12,7 +12,7 @@ export type ActionInput = {
 }
 
 type CommitTime = {
-    timestamp: string,
+    committedAt: string,
     sha: string,
 }
 
@@ -72,9 +72,9 @@ function getInputs(): ActionInput {
 function mapCommitToCommitTime(actionContext: ActionContext,
 			       commit: CommitResponse): CommitTime {
     let { date: parsedDate = "" } = commit.author;
-    const timestamp = format(parseISO(parsedDate), "yyyy-MM-dd'T'HH:mm:ssXXXXX")
+    const committedAt = format(parseISO(parsedDate), "yyyy-MM-dd'T'HH:mm:ssXXXXX")
     return {
-	timestamp,
+	committedAt,
 	sha: commit.url.replace(actionContext.apiRoot, '')
     };
 }

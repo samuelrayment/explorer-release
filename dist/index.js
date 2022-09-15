@@ -59,9 +59,9 @@ function getInputs() {
 }
 function mapCommitToCommitTime(actionContext, commit) {
     let { date: parsedDate = "" } = commit.author;
-    const timestamp = (0, date_fns_1.format)((0, date_fns_1.parseISO)(parsedDate), "yyyy-MM-dd'T'HH:mm:ssXXXXX");
+    const committedAt = (0, date_fns_1.format)((0, date_fns_1.parseISO)(parsedDate), "yyyy-MM-dd'T'HH:mm:ssXXXXX");
     return {
-        timestamp,
+        committedAt,
         sha: commit.url.replace(actionContext.apiRoot, '')
     };
 }
