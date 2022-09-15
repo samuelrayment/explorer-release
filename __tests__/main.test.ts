@@ -60,14 +60,14 @@ test('should post commits when action fires on push', async() => {
     const event: MinimalPushEvent = {
 	before: "before-ref",
 	after: "head-ref",
-	pushed_at: 12102323
+	pushed_at: 1663057197
     };
     const endpoint = 'http://endpoint.com/web-hook'
     setInput('github-token', 'fake-token');
     setInput('explorer-endpoint', endpoint);
     setInput('secret-key', 'secret-key');    
-    addCommitToResponse("first-sha", "2022-09-12T09:00:00");
-    addCommitToResponse("second-sha", "2022-09-12T09:10:00");
+    addCommitToResponse("first-sha", "2022-09-12T09:00:00+01:00");
+    addCommitToResponse("second-sha", "2022-09-12T09:10:00+01:00");
     
     await processPushEvent(event, client);
 
@@ -83,10 +83,10 @@ test('should post commits when action fires on push', async() => {
     );
     let expectedBody = {			
 	commits: [
-          { timestamp: 1662969600, sha: 'first-sha' },
-          { timestamp: 1662970200, sha: 'second-sha' }
+          { timestamp: "2022-09-12T09:00:00+01:00", sha: 'first-sha' },
+          { timestamp: "2022-09-12T09:10:00+01:00", sha: 'second-sha' }
 	],
-	pushedAt: 12102323,
+	pushedAt: "2022-09-13T09:19:57+01:00",
 	sha: 'head-ref'
     };
     expect(client.post).toHaveBeenCalledWith(

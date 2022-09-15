@@ -3,6 +3,7 @@ import * as github from '@actions/github'
 import {PushEvent} from '@octokit/webhooks-types'
 import { Endpoints } from "@octokit/types";
 import * as http from '@actions/http-client';
+import { format, parseISO } from 'date-fns'
 
 export type ActionInput = {
     token: string,
@@ -11,13 +12,13 @@ export type ActionInput = {
 }
 
 type CommitTime = {
-    timestamp: number,
+    timestamp: string,
     sha: string,
 }
 
 type MessageBody = {
     commits: CommitTime[],
-    pushedAt: number,
+    pushedAt: string,
     sha: string
 }
 
@@ -71,7 +72,7 @@ function getInputs(): ActionInput {
 function mapCommitToCommitTime(actionContext: ActionContext,
 			       commit: CommitResponse): CommitTime {
     let { date: parsedDate = "" } = commit.author;
-    const timestamp: number = (Date.parse(parsedDate) ?? 0) / 1000;
+    const timestamp = format(parseISO(parsedDate), "yyyy-MM-dd'T'HH:mm:ssXXXXX")
     return {
 	timestamp,
 	sha: commit.url.replace(actionContext.apiRoot, '')
@@ -101,11 +102,11 @@ async function fetchCommitTimes(octokit: Octokit, actionContext: ActionContext,
     return commitTimes;
 }
 
-function getPushedAt(event: MinimalPushEvent): number {
+function getPushedAt(event: MinimalPushEvent): string {
     const rawPushedAt = event.pushed_at;
-    let pushedAt = 0;
+    let pushedAt = "";
     if (typeof rawPushedAt === 'number') {
-	pushedAt = rawPushedAt;
+	pushedAt = format(new Date(rawPushedAt * 1000), "yyyy-MM-dd'T'HH:mm:ssXXXXX")
     }
     return pushedAt;
 }
